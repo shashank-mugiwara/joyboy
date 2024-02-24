@@ -77,15 +77,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 	fmt.Printf("Stopping container %s\n", createResult.ContainerId)
 	stop_container(dockerTask)
 }
 
 func create_container() (*task.Docker, *task.DockerResult) {
 	containerConfig := config.Config{
-		Name:  "postgres-container-001-test",
-		Image: "postgres:13",
+		Name:  "postgres-001",
+		Image: "postgres:12",
 		Env: []string{
 			"POSPOSTGRES_USER=joyboy",
 			"POSTGRES_PASSWORD=SamplePassword",
@@ -104,6 +104,8 @@ func create_container() (*task.Docker, *task.DockerResult) {
 		fmt.Printf("%v\n", result.Error)
 		return nil, nil
 	}
+
+	fmt.Printf("%v", result)
 
 	fmt.Printf("Container %s is running with config %v\n", result.ContainerId, containerConfig)
 	return &d, &result

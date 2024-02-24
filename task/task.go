@@ -103,6 +103,10 @@ func (d *Docker) Run() DockerResult {
 		return DockerResult{Error: err}
 	}
 
+	if err := d.Client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		panic(err)
+	}
+
 	d.ContainerId = resp.ID
 	out, err := d.Client.ContainerLogs(
 		ctx, resp.ID, container.LogsOptions{ShowStdout: true, ShowStderr: true})
