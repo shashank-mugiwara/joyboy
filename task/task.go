@@ -39,7 +39,9 @@ type Task struct {
 	RestartPolicy string
 	StartTime     time.Time
 	EndTime       time.Time
+	FinishTime    time.Time
 	Duration      time.Time
+	ContainerID   string
 }
 
 type TaskEvent struct {
@@ -142,4 +144,18 @@ func (d *Docker) Stop(id string) DockerResult {
 	}
 
 	return DockerResult{Action: "stop", Result: "success", Error: nil}
+}
+
+func (t *Task) NewConfig(task Task) config.Config {
+	return config.Config{
+		Name:   task.Name,
+		Image:  task.Image,
+		Memory: int64(task.Memory),
+	}
+}
+
+func (t *Task) NewDocker(conf config.Config) Docker {
+	return Docker{
+		Config: conf,
+	}
 }
