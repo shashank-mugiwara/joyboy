@@ -27,6 +27,14 @@ const (
 	Failed
 )
 
+var stateTransitionMap = map[State][]State{
+	Pending:   {Scheduled},
+	Scheduled: {Scheduled, Running, Failed},
+	Running:   {Running, Completed, Failed},
+	Completed: {},
+	Failed:    {},
+}
+
 type Task struct {
 	ID            uuid.UUID
 	Name          string
@@ -155,7 +163,29 @@ func (t *Task) NewConfig(task Task) config.Config {
 }
 
 func (t *Task) NewDocker(conf config.Config) Docker {
+	dc, err := client.NewClientWithOpts(client.FromEnv)
+
+	if err != nil {
+		fmt.Printf("error creating docker client %v\n", err)
+		panic(err)
+	}
+
 	return Docker{
 		Config: conf,
+		Client: dc,
 	}
+}
+
+func Contains(states []State, state State) bool {
+	for _, s := range states {
+		if s == state {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ValidStateTransition(src State, dst State) bool {
+	return Contains(stateTransitionMap[src], dst)
 }
