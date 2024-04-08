@@ -13,7 +13,7 @@ import (
 
 type Worker struct {
 	Name      string
-	Queue     queue.Queue
+	Queue     *queue.Queue
 	Db        map[uuid.UUID]*task.Task
 	TaskCount int
 }
@@ -23,31 +23,31 @@ func (w *Worker) CollectStats() {
 }
 
 func (w *Worker) RunTask() task.DockerResult {
-	t := w.Queue.Dequeue()
-	if t == nil {
+	if w.Queue.Len() == 0 {
 		log.Println("No tasks in queue")
 		return task.DockerResult{Error: nil}
 	}
 
-	taskQueued := t.(task.Task)
-	taskPersisted := w.Db[taskQueued.ID]
+	t := w.Queue.Dequeue().(task.Task)
+
+	taskPersisted := w.Db[t.ID]
 	if taskPersisted == nil {
-		taskPersisted = &taskQueued
-		w.Db[taskQueued.ID] = &taskQueued
+		taskPersisted = &t
+		w.Db[t.ID] = &t
 	}
 
 	var result task.DockerResult
-	if task.ValidStateTransition(taskPersisted.State, taskQueued.State) {
-		switch taskQueued.State {
+	if task.ValidStateTransition(taskPersisted.State, t.State) {
+		switch t.State {
 		case task.Scheduled:
-			result = w.StartTask(taskQueued)
+			result = w.StartTask(t)
 		case task.Completed:
-			result = w.StopTask(taskQueued)
+			result = w.StopTask(t)
 		default:
 			result.Error = errors.New("we should not run this task")
 		}
 	} else {
-		err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
+		err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, t.State)
 		result.Error = err
 	}
 
@@ -94,7 +94,7 @@ func (w *Worker) AddTask(t task.Task) {
 	w.Queue.Enqueue(t)
 }
 
-func RunTasks(w *Worker) {
+func RunTasks(w Worker) {
 	for {
 		if w.Queue.Len() != 0 {
 			result := w.RunTask()

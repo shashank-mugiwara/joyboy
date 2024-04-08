@@ -12,7 +12,7 @@ import (
 
 func (h *Handler) StartTask(c echo.Context) error {
 	req := TaskRequest{}
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, errors.New(err.Error()))
 	}
 
@@ -28,8 +28,10 @@ func (h *Handler) StartTask(c echo.Context) error {
 		Image: req.Image,
 		Name:  req.Name,
 		ID:    uuid.New(),
+		State: task.Scheduled,
 	}
 
 	h.worker.AddTask(newTask)
+	c.Logger().Info("Task successfully submitted to queue.")
 	return c.JSON(http.StatusAccepted, newTask)
 }

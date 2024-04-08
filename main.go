@@ -9,20 +9,30 @@ import (
 
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
 	"github.com/shashank-mugiwara/joyboy/task"
 	"github.com/shashank-mugiwara/joyboy/worker"
 )
 
+func HandleRoutes(r *echo.Echo, w worker.Worker) {
+	taskapi.NewHandler(w).InitRoutes(r)
+}
+
 func main() {
 	os.Setenv("DOCKER_API_VERSION", "1.44")
 	r := router.New()
+	r.Use(middleware.Recover())
 
 	db := make(map[uuid.UUID]*task.Task)
 	w := worker.Worker{
-		Queue: *queue.New(),
+		Queue: queue.New(),
 		Db:    db,
 	}
+
+	HandleRoutes(r, w)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -34,7 +44,7 @@ func main() {
 	}()
 
 	r.Logger.Info("Worker initialized and are Ready...")
-	go worker.RunTasks(&w)
+	go worker.RunTasks(w)
 	r.Logger.Info("Workers are now listening to their worker queue.")
 
 	<-ctx.Done()
