@@ -33,5 +33,12 @@ func (h *Handler) StartTask(c echo.Context) error {
 
 	h.worker.AddTask(newTask)
 	c.Logger().Info("Task successfully submitted to queue.")
-	return c.JSON(http.StatusAccepted, newTask)
+
+	taskResponse := TaskResponse{
+		Image: newTask.Image,
+		Name:  newTask.Name,
+		ID:    newTask.ID.String(),
+		State: newTask.State.String(),
+	}
+	return c.JSON(http.StatusAccepted, taskResponse)
 }
