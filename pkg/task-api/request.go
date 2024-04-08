@@ -3,6 +3,7 @@ package taskapi
 type TaskRequest struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	ID    string `json:"id"`
 }
 
 type TaskResponse struct {

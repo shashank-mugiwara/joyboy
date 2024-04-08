@@ -42,3 +42,26 @@ func (h *Handler) StartTask(c echo.Context) error {
 	}
 	return c.JSON(http.StatusAccepted, taskResponse)
 }
+
+func (h *Handler) StopTask(c echo.Context) error {
+	req := TaskRequest{}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, errors.New(err.Error()))
+	}
+
+	if utils.IsBlank(req.ID) {
+		return c.JSON(http.StatusBadRequest, errors.New("id field is required to stop a task"))
+	}
+
+	task_id, err := uuid.Parse(req.ID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errors.New("given uuid of task is improper"))
+	}
+
+	newTask := task.Task{
+		ID: task_id,
+	}
+
+	h.worker.StopTask(newTask)
+	return c.JSON(http.StatusOK, newTask)
+}
