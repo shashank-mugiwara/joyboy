@@ -8,12 +8,11 @@ import (
 	"time"
 
 	"github.com/golang-collections/collections/queue"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/shashank-mugiwara/joyboy/database"
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
-	"github.com/shashank-mugiwara/joyboy/task"
 	"github.com/shashank-mugiwara/joyboy/worker"
 )
 
@@ -25,11 +24,11 @@ func main() {
 	os.Setenv("DOCKER_API_VERSION", "1.44")
 	r := router.New()
 	r.Use(middleware.Recover())
+	database.InitKVDb()
 
-	db := make(map[uuid.UUID]*task.Task)
 	w := worker.Worker{
 		Queue: queue.New(),
-		Db:    db,
+		DB:    database.GetDb(),
 	}
 
 	HandleRoutes(r, w)

@@ -12,12 +12,11 @@ func GetDb() *badger.DB {
 	return badgerDb
 }
 
-func GetDatabaseConnection() {
+func InitKVDb() {
 	db, err := badger.Open(badger.DefaultOptions("store"))
 	if err != nil {
 		log.Fatalln("Failed to open DB connection. Exiting ...")
 	}
-	defer db.Close()
 
 	badgerDb = db
 }
