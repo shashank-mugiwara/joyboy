@@ -12,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/shashank-mugiwara/joyboy/config"
 )
@@ -26,6 +25,23 @@ const (
 	Completed
 	Failed
 )
+
+func (s State) String() string {
+	switch s {
+	case Pending:
+		return "Pending"
+	case Scheduled:
+		return "Scheduled"
+	case Running:
+		return "Running"
+	case Completed:
+		return "Completed"
+	case Failed:
+		return "Failed"
+	default:
+		return fmt.Sprintf("Unknown state: %d", s)
+	}
+}
 
 var stateTransitionMap = map[State][]State{
 	Pending:   {Scheduled},
@@ -42,8 +58,8 @@ type Task struct {
 	Image         string
 	Memory        int
 	Disk          int
-	ExposedPorts  nat.PortSet
-	PortBindings  map[string]string
+	ExposedPorts  string
+	PortBindings  string
 	RestartPolicy string
 	StartTime     time.Time
 	EndTime       time.Time
@@ -70,6 +86,7 @@ type DockerResult struct {
 	Action      string
 	ContainerId string
 	Result      string
+	Message     string
 }
 
 func (d *Docker) Run() DockerResult {

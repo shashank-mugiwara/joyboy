@@ -1,47 +1,57 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"net/http"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/golang-collections/collections/queue"
-	"github.com/google/uuid"
-	"github.com/shashank-mugiwara/joyboy/task"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/shashank-mugiwara/joyboy/database"
+	"github.com/shashank-mugiwara/joyboy/migrate"
+	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
+	"github.com/shashank-mugiwara/joyboy/router"
 	"github.com/shashank-mugiwara/joyboy/worker"
 )
 
+func HandleRoutes(r *echo.Echo, w worker.Worker) {
+	taskapi.NewHandler(w).InitRoutes(r)
+}
+
 func main() {
 	os.Setenv("DOCKER_API_VERSION", "1.44")
-	db := make(map[uuid.UUID]*task.Task)
+	r := router.New()
+	r.Use(middleware.Recover())
+	database.InitDb()
+	migrate.AutoMigrate()
+
 	w := worker.Worker{
-		Queue: *queue.New(),
-		Db:    db,
+		Queue: queue.New(),
+		DB:    database.GetDb(),
 	}
 
-	t := task.Task{
-		ID:    uuid.New(),
-		Name:  "test-container-1",
-		State: task.Scheduled,
-		Image: "nginx:mainline-alpine-perl",
-	}
+	HandleRoutes(r, w)
 
-	fmt.Println("starting worker")
-	w.AddTask(t)
-	result := w.RunTask()
-	if result.Error != nil {
-		panic(result.Error)
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	// Start server
+	go func() {
+		if err := r.Start(":8070"); err != nil && err != http.ErrServerClosed {
+			r.Logger.Fatal("shutting down the server")
+		}
+	}()
 
-	t.ContainerID = result.ContainerId
-	fmt.Printf("task %s is running in container %s\n", t.ID, result.ContainerId)
-	fmt.Println("sleeping for 30 seconds / letting container run for 30 seconds")
-	time.Sleep(time.Second * 30)
+	r.Logger.Info("Worker initialized and are Ready...")
+	go worker.RunTasks(w)
+	r.Logger.Info("Workers are now listening to their worker queue.")
 
-	fmt.Println("stopping tasks")
-	result = w.StopTask(t)
-	if result.Error != nil {
-		fmt.Printf("error in stopping the container %v\n", result.Error)
-		panic(result.Error)
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := r.Shutdown(ctx); err != nil {
+		r.Logger.Fatal(err)
 	}
 }
