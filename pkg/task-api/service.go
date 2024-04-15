@@ -62,6 +62,6 @@ func (h *Handler) StopTask(c echo.Context) error {
 		ID: task_id,
 	}
 
-	h.worker.StopTask(newTask)
-	return c.JSON(http.StatusOK, newTask)
+	result := h.worker.StopTask(newTask)
+	return c.JSON(http.StatusOK, result)
 }

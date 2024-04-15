@@ -87,6 +87,7 @@ func (w *Worker) StopTask(t task.Task) task.DockerResult {
 
 	t.FinishTime = time.Now().UTC()
 	t.State = task.Completed
+	t.ID = runningTask.ID
 	updatedTask := w.DB.Save(&t)
 	if updatedTask.Error != nil {
 		log.Println("Failed to update task in DB after stopping it.")
@@ -97,6 +98,17 @@ func (w *Worker) StopTask(t task.Task) task.DockerResult {
 	}
 
 	log.Printf("Stopped and removed the container %v for task %v", t.ContainerID, t.ID)
+	result.ContainerId = runningTask.ContainerID
+	result.Message = "Container stopped successfully!"
+	deleteResult := w.DB.Delete(&t)
+	if deleteResult.Error != nil {
+		log.Println("Failed to delete task in DB after stopping it.")
+		return task.DockerResult{
+			Error:   deleteResult.Error,
+			Message: "Please check the container might still be running. You can use 'docker stop [container-id]' to stop and 'docker rm [container-id]'",
+		}
+	}
+
 	return result
 }
 
@@ -120,8 +132,10 @@ func (w *Worker) StartTask(t task.Task) task.DockerResult {
 
 	t.ContainerID = result.ContainerId
 	t.State = task.Running
-	var taskPersisted = t
-	dbInsertion := w.DB.Create(&taskPersisted)
+	t.StartTime = time.Now()
+	t.EndTime = time.Now()
+
+	dbInsertion := w.DB.Create(&t)
 	if dbInsertion.Error != nil {
 		log.Println("Failed to insert task to db.")
 		return task.DockerResult{
