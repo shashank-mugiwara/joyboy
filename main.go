@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/shashank-mugiwara/joyboy/database"
+	"github.com/shashank-mugiwara/joyboy/migrate"
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
 	"github.com/shashank-mugiwara/joyboy/worker"
@@ -24,7 +25,8 @@ func main() {
 	os.Setenv("DOCKER_API_VERSION", "1.44")
 	r := router.New()
 	r.Use(middleware.Recover())
-	database.InitKVDb()
+	database.InitDb()
+	migrate.AutoMigrate()
 
 	w := worker.Worker{
 		Queue: queue.New(),

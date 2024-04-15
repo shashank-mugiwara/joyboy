@@ -3,20 +3,21 @@ package database
 import (
 	"log"
 
-	"github.com/dgraph-io/badger/v4"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var badgerDb *badger.DB
+var gormDb *gorm.DB
 
-func GetDb() *badger.DB {
-	return badgerDb
+func GetDb() *gorm.DB {
+	return gormDb
 }
 
-func InitKVDb() {
-	db, err := badger.Open(badger.DefaultOptions("store"))
+func InitDb() {
+	db, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatalln("Failed to open DB connection. Exiting ...")
 	}
 
-	badgerDb = db
+	gormDb = db
 }

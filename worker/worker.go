@@ -6,17 +6,15 @@ import (
 	"log"
 	"time"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/golang-collections/collections/queue"
-	"github.com/shashank-mugiwara/joyboy/database"
 	"github.com/shashank-mugiwara/joyboy/task"
-	"github.com/shashank-mugiwara/joyboy/utils"
+	"gorm.io/gorm"
 )
 
 type Worker struct {
 	Name      string
 	Queue     *queue.Queue
-	DB        *badger.DB
+	DB        *gorm.DB
 	TaskCount int
 }
 
@@ -31,30 +29,10 @@ func (w *Worker) RunTask() task.DockerResult {
 	}
 
 	t := w.Queue.Dequeue().(task.Task)
-	var marshalledTask string
-	err := w.DB.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(t.ID.String()))
-		if err != nil {
-			log.Println("No entry found for the existing taskId. Considering it as new task with Id: ", t.ID.String())
-			return err
-		}
-		marshalledTask = item.String()
-		return err
-	})
-
 	var taskPersisted task.Task
-	if err == nil {
-		taskPersisted = utils.UnmarshallTask(marshalledTask)
-	} else {
-		taskPersisted = t
-		err := w.DB.Update(func(txn *badger.Txn) error {
-			err := txn.Set([]byte(taskPersisted.ID.String()), []byte(utils.MarshallTask(taskPersisted)))
-			return err
-		})
-
-		if err != nil {
-			log.Println("Failed to insert task to KV db.")
-		}
+	getResult := w.DB.First(&taskPersisted, t.ID)
+	if getResult.Error != nil {
+		log.Println("No tasks found running with the given taskId: ", t.ID, ". Treating it as new task.")
 	}
 
 	var result task.DockerResult
@@ -72,12 +50,14 @@ func (w *Worker) RunTask() task.DockerResult {
 		result.Error = err
 	}
 
-	err = w.DB.Update(func(txn *badger.Txn) error {
-		err := txn.Set([]byte(taskPersisted.ID.String()), []byte(utils.MarshallTask(t)))
-		return err
-	})
-	if err != nil {
-		log.Printf("failed to persist task info after running/stopping the task")
+	t.ContainerID = result.ContainerId
+	updatedTask := w.DB.Save(&t)
+	if updatedTask.Error != nil {
+		log.Println("Failed to update task in DB after stopping it.")
+		return task.DockerResult{
+			Error:   updatedTask.Error,
+			Message: "Please check the container might still be running. You can use 'docker stop [container-id]' to stop and 'docker rm [container-id]'",
+		}
 	}
 
 	return result
@@ -87,41 +67,33 @@ func (w *Worker) StopTask(t task.Task) task.DockerResult {
 	config := t.NewConfig(t)
 	d := t.NewDocker(config)
 
-	var marshalledTask string
-	err := w.DB.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(t.ID.String()))
-		if err != nil {
-			log.Println("No entry found for the existing taskId. Considering it as new task with Id: ", t.ID.String())
-			return err
-		}
-		marshalledTask = item.String()
-		return err
-	})
-
-	if err != nil {
+	var runningTask task.Task
+	getResult := w.DB.First(&runningTask, t.ID)
+	if getResult.Error != nil {
 		log.Println("No tasks found running with the given taskId: ", t.ID)
 		return task.DockerResult{
 			Error: errors.New("no tasks found running with the given task id"),
 		}
 	}
 
-	runningTask := utils.UnmarshallTask(marshalledTask)
 	result := d.Stop(runningTask.ContainerID)
 	if result.Error != nil {
 		log.Printf("Error stopping container %v: %v", t.ContainerID, result.Error)
+		return task.DockerResult{
+			Error:   result.Error,
+			Message: "Please check the container might still be running. You can use 'docker stop [container-id]' to stop and 'docker rm [container-id]'",
+		}
 	}
 
 	t.FinishTime = time.Now().UTC()
 	t.State = task.Completed
-
-	var taskPersisted = t
-	err = w.DB.Update(func(txn *badger.Txn) error {
-		err := txn.Set([]byte(taskPersisted.ID.String()), []byte(utils.MarshallTask(taskPersisted)))
-		return err
-	})
-
-	if err != nil {
-		log.Println("Failed to insert task to KV db.")
+	updatedTask := w.DB.Save(&t)
+	if updatedTask.Error != nil {
+		log.Println("Failed to update task in DB after stopping it.")
+		return task.DockerResult{
+			Error:   updatedTask.Error,
+			Message: "Please check the container might still be running. You can use 'docker stop [container-id]' to stop and 'docker rm [container-id]'",
+		}
 	}
 
 	log.Printf("Stopped and removed the container %v for task %v", t.ContainerID, t.ID)
@@ -138,38 +110,26 @@ func (w *Worker) StartTask(t task.Task) task.DockerResult {
 	if result.Error != nil {
 		log.Printf("Error running task %v: %v\n", t.ID, result.Error)
 		t.State = task.Failed
-		var taskPersisted = t
-		err := w.DB.Update(func(txn *badger.Txn) error {
-			err := txn.Set([]byte(taskPersisted.ID.String()), []byte(utils.MarshallTask(taskPersisted)))
-			return err
-		})
-
-		if err != nil {
-			log.Println("Failed to insert task to KV db.")
+		return task.DockerResult{
+			Error:       result.Error,
+			ContainerId: t.ContainerID,
+			Action:      "Failed",
 		}
-		return result
+
 	}
 
 	t.ContainerID = result.ContainerId
 	t.State = task.Running
 	var taskPersisted = t
-	err := w.DB.Update(func(txn *badger.Txn) error {
-		err := txn.Set([]byte(taskPersisted.ID.String()), []byte(utils.MarshallTask(taskPersisted)))
-		return err
-	})
-
-	if err != nil {
-		log.Println("Failed to insert task to KV db.")
-	}
-
-	// Insert entry to db
-	err = database.GetDb().Update(func(txn *badger.Txn) error {
-		err := txn.Set([]byte(t.ID.String()), []byte(utils.MarshallTask(t)))
-		return err
-	})
-
-	if err != nil {
-		log.Println("Failed to insert container details to KV store.")
+	dbInsertion := w.DB.Create(&taskPersisted)
+	if dbInsertion.Error != nil {
+		log.Println("Failed to insert task to db.")
+		return task.DockerResult{
+			Error:       dbInsertion.Error,
+			ContainerId: t.ContainerID,
+			Action:      "Failed",
+			Message:     "Please check the container might still be running. You can use 'docker stop [container-id]' to stop and 'docker rm [container-id]'",
+		}
 	}
 
 	return result
