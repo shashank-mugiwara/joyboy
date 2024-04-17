@@ -30,10 +30,6 @@ func (w *Worker) RunTask() task.DockerResult {
 
 	t := w.Queue.Dequeue().(task.Task)
 	var taskPersisted task.Task
-	getResult := w.DB.First(&taskPersisted, t.ID)
-	if getResult.Error != nil {
-		log.Println("No tasks found running with the given taskId: ", t.ID, ". Treating it as new task.")
-	}
 
 	var result task.DockerResult
 	if task.ValidStateTransition(taskPersisted.State, t.State) {
@@ -130,6 +126,7 @@ func (w *Worker) StartTask(t *task.Task) task.DockerResult {
 
 	}
 
+	t.State = task.Running
 	return result
 }
 
