@@ -45,7 +45,7 @@ func (h *Handler) StartTask(c echo.Context) error {
 		Image: req.Image,
 		Name:  req.Name,
 		ID:    uuid.New(),
-		State: task.Scheduled,
+		State: task.Scheduled.String(),
 	}
 
 	result = h.DB.Save(newTask)
@@ -61,7 +61,7 @@ func (h *Handler) StartTask(c echo.Context) error {
 		Image: newTask.Image,
 		Name:  newTask.Name,
 		ID:    newTask.ID.String(),
-		State: newTask.State.String(),
+		State: newTask.State,
 	}
 	return c.JSON(http.StatusAccepted, taskResponse)
 }

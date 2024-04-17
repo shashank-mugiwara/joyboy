@@ -30,13 +30,21 @@ func (w *Worker) RunTask() task.DockerResult {
 
 	t := w.Queue.Dequeue().(task.Task)
 	var taskPersisted task.Task
+	taskPerResult := w.DB.Where(&task.Task{ID: t.ID}).Find(&taskPersisted)
+	if taskPerResult.RowsAffected == 0 || taskPerResult.Error != nil {
+		log.Println("Failed to fetch existing task record in database")
+		return task.DockerResult{
+			Error:   taskPerResult.Error,
+			Message: "Failed to fetch task from database.",
+		}
+	}
 
 	var result task.DockerResult
 	if task.ValidStateTransition(taskPersisted.State, t.State) {
 		switch t.State {
-		case task.Scheduled:
+		case task.Scheduled.String():
 			result = w.StartTask(&t)
-		case task.Completed:
+		case task.Completed.String():
 			result = w.StopTask(&t)
 		default:
 			result.Error = errors.New("we should not run this task")
@@ -82,7 +90,7 @@ func (w *Worker) StopTask(t *task.Task) task.DockerResult {
 	}
 
 	t.FinishTime = time.Now().UTC()
-	t.State = task.Completed
+	t.State = task.Completed.String()
 	t.ID = runningTask.ID
 	updatedTask := w.DB.Save(&t)
 	if updatedTask.Error != nil {
@@ -117,7 +125,7 @@ func (w *Worker) StartTask(t *task.Task) task.DockerResult {
 
 	if result.Error != nil {
 		log.Printf("Error running task %v: %v\n", t.ID, result.Error)
-		t.State = task.Failed
+		t.State = task.Failed.String()
 		return task.DockerResult{
 			Error:       result.Error,
 			ContainerId: t.ContainerID,
@@ -126,7 +134,7 @@ func (w *Worker) StartTask(t *task.Task) task.DockerResult {
 
 	}
 
-	t.State = task.Running
+	t.State = task.Running.String()
 	return result
 }
 
