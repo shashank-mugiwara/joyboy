@@ -171,7 +171,7 @@ func (d *Docker) Stop(id string) DockerResult {
 	return DockerResult{Action: "stop", Result: "success", Error: nil}
 }
 
-func (t *Task) NewConfig(task Task) config.Config {
+func (t *Task) NewConfig(task *Task) config.Config {
 	return config.Config{
 		Name:   task.Name,
 		Image:  task.Image,

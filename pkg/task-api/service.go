@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/shashank-mugiwara/joyboy/task"
 	"github.com/shashank-mugiwara/joyboy/utils"
+	"gorm.io/gorm"
 )
 
 func (h *Handler) StartTask(c echo.Context) error {
@@ -24,11 +25,33 @@ func (h *Handler) StartTask(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, errors.New("name field is mandatory"))
 	}
 
+	var existingTask task.Task
+	result := h.DB.Where(&task.Task{Name: req.Name}).Take(&existingTask)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		result.Error = nil
+	}
+
+	if result.Error != nil {
+		c.Logger().Info("Failed to fetch entries from db. Error is: ", result.Error.Error())
+		return c.JSON(http.StatusBadRequest, result.Error)
+	}
+
+	if existingTask.Name == req.Name {
+		return c.JSON(http.StatusBadRequest, "Container with name: "+req.Name+" is already running. Please stop this container and try again")
+	}
+
 	newTask := task.Task{
 		Image: req.Image,
 		Name:  req.Name,
 		ID:    uuid.New(),
 		State: task.Scheduled,
+	}
+
+	result = h.DB.Save(newTask)
+	if result.Error != nil {
+		c.Logger().Info("Failed to save entried to db. Error is: ", result.Error.Error())
+		return c.JSON(http.StatusBadRequest, result.Error)
 	}
 
 	h.worker.AddTask(newTask)
@@ -62,6 +85,17 @@ func (h *Handler) StopTask(c echo.Context) error {
 		ID: task_id,
 	}
 
-	result := h.worker.StopTask(newTask)
+	result := h.worker.StopTask(&newTask)
 	return c.JSON(http.StatusOK, result)
+}
+
+func (h *Handler) GetListOfRunningTasks(c echo.Context) error {
+	var tasks []task.Task
+	result := h.DB.Find(&tasks)
+
+	if result.Error != nil {
+		return c.JSON(http.StatusBadRequest, result.Error)
+	}
+
+	return c.JSON(http.StatusOK, tasks)
 }

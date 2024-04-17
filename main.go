@@ -15,10 +15,11 @@ import (
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
 	"github.com/shashank-mugiwara/joyboy/worker"
+	"gorm.io/gorm"
 )
 
-func HandleRoutes(r *echo.Echo, w worker.Worker) {
-	taskapi.NewHandler(w).InitRoutes(r)
+func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
+	taskapi.NewHandler(w, db).InitRoutes(r)
 }
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 		DB:    database.GetDb(),
 	}
 
-	HandleRoutes(r, w)
+	HandleRoutes(r, w, database.GetDb())
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

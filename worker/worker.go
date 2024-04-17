@@ -39,9 +39,9 @@ func (w *Worker) RunTask() task.DockerResult {
 	if task.ValidStateTransition(taskPersisted.State, t.State) {
 		switch t.State {
 		case task.Scheduled:
-			result = w.StartTask(t)
+			result = w.StartTask(&t)
 		case task.Completed:
-			result = w.StopTask(t)
+			result = w.StopTask(&t)
 		default:
 			result.Error = errors.New("we should not run this task")
 		}
@@ -63,7 +63,7 @@ func (w *Worker) RunTask() task.DockerResult {
 	return result
 }
 
-func (w *Worker) StopTask(t task.Task) task.DockerResult {
+func (w *Worker) StopTask(t *task.Task) task.DockerResult {
 	config := t.NewConfig(t)
 	d := t.NewDocker(config)
 
@@ -112,7 +112,7 @@ func (w *Worker) StopTask(t task.Task) task.DockerResult {
 	return result
 }
 
-func (w *Worker) StartTask(t task.Task) task.DockerResult {
+func (w *Worker) StartTask(t *task.Task) task.DockerResult {
 	t.StartTime = time.Now().UTC()
 	config := t.NewConfig(t)
 	d := t.NewDocker(config)
@@ -128,22 +128,6 @@ func (w *Worker) StartTask(t task.Task) task.DockerResult {
 			Action:      "Failed",
 		}
 
-	}
-
-	t.ContainerID = result.ContainerId
-	t.State = task.Running
-	t.StartTime = time.Now()
-	t.EndTime = time.Now()
-
-	dbInsertion := w.DB.Create(&t)
-	if dbInsertion.Error != nil {
-		log.Println("Failed to insert task to db.")
-		return task.DockerResult{
-			Error:       dbInsertion.Error,
-			ContainerId: t.ContainerID,
-			Action:      "Failed",
-			Message:     "Please check the container might still be running. You can use 'docker stop [container-id]' to stop and 'docker rm [container-id]'",
-		}
 	}
 
 	return result
