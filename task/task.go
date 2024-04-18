@@ -43,29 +43,29 @@ func (s State) String() string {
 	}
 }
 
-var stateTransitionMap = map[State][]State{
-	Pending:   {Scheduled},
-	Scheduled: {Scheduled, Running, Failed},
-	Running:   {Running, Completed, Failed},
-	Completed: {},
-	Failed:    {},
+var stateTransitionMap = map[string][]string{
+	"Pending":   {"Scheduled"},
+	"Scheduled": {"Scheduled", "Running", "Failed"},
+	"Running":   {"Running", "Completed", "Failed"},
+	"Completed": {},
+	"Failed":    {},
 }
 
 type Task struct {
-	ID            uuid.UUID
-	Name          string
-	State         State
-	Image         string
-	Memory        int
-	Disk          int
-	ExposedPorts  string
-	PortBindings  string
-	RestartPolicy string
-	StartTime     time.Time
-	EndTime       time.Time
-	FinishTime    time.Time
-	Duration      time.Time
-	ContainerID   string
+	ID            uuid.UUID `json:"id"`
+	Name          string    `json:"name"`
+	State         string    `json:"state"`
+	Image         string    `json:"image"`
+	Memory        int       `json:"memory"`
+	Disk          int       `json:"disk"`
+	ExposedPorts  string    `json:"exposedPorts"`
+	PortBindings  string    `json:"portBindings"`
+	RestartPolicy string    `json:"restartPolicy"`
+	StartTime     time.Time `json:"startTime"`
+	EndTime       time.Time `json:"endTime"`
+	FinishTime    time.Time `json:"finishTime"`
+	Duration      time.Time `json:"duration"`
+	ContainerID   string    `json:"containerId"`
 }
 
 type TaskEvent struct {
@@ -171,7 +171,7 @@ func (d *Docker) Stop(id string) DockerResult {
 	return DockerResult{Action: "stop", Result: "success", Error: nil}
 }
 
-func (t *Task) NewConfig(task Task) config.Config {
+func (t *Task) NewConfig(task *Task) config.Config {
 	return config.Config{
 		Name:   task.Name,
 		Image:  task.Image,
@@ -193,7 +193,7 @@ func (t *Task) NewDocker(conf config.Config) Docker {
 	}
 }
 
-func Contains(states []State, state State) bool {
+func Contains(states []string, state string) bool {
 	for _, s := range states {
 		if s == state {
 			return true
@@ -203,6 +203,6 @@ func Contains(states []State, state State) bool {
 	return false
 }
 
-func ValidStateTransition(src State, dst State) bool {
+func ValidStateTransition(src string, dst string) bool {
 	return Contains(stateTransitionMap[src], dst)
 }
