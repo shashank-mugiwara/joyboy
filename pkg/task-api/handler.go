@@ -23,4 +23,5 @@ func (h *Handler) InitRoutes(e *echo.Echo) {
 	task_route.POST("/add", h.StartTask)
 	task_route.POST("/stop", h.StopTask)
 	task_route.GET("/tasks", h.GetListOfRunningTasks)
+	task_route.GET("/:id", h.GetSingleTaskInformation)
 }

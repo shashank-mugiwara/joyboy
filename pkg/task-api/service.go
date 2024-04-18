@@ -99,3 +99,23 @@ func (h *Handler) GetListOfRunningTasks(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, tasks)
 }
+
+func (h *Handler) GetSingleTaskInformation(c echo.Context) error {
+	var runningTask task.Task
+	taskId := c.Param("id")
+	taskUUID, err := uuid.Parse(taskId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "Failed to parse UUID")
+	}
+
+	result := h.DB.Where(&task.Task{ID: taskUUID}).Find(&runningTask)
+	if result.Error != nil {
+		return c.JSON(http.StatusBadRequest, result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return c.JSON(http.StatusBadRequest, "No running tasks found for the given taskId.")
+	}
+
+	return c.JSON(http.StatusOK, runningTask)
+}
