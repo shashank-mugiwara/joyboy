@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/Users/shashank.j/Documents/GitHub/joyboy/main.go"
+            "program": "/home/shashank/joyboy/main.go"
         }
     ]
 }
