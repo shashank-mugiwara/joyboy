@@ -23,7 +23,6 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 }
 
 func main() {
-	os.Setenv("DOCKER_API_VERSION", "1.44")
 	r := router.New()
 	r.Use(middleware.Recover())
 	database.InitDb()

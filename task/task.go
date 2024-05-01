@@ -180,7 +180,7 @@ func (t *Task) NewConfig(task *Task) config.Config {
 }
 
 func (t *Task) NewDocker(conf config.Config) Docker {
-	dc, err := client.NewClientWithOpts(client.FromEnv)
+	dc, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 
 	if err != nil {
 		fmt.Printf("error creating docker client %v\n", err)

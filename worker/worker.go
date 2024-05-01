@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-collections/collections/queue"
 	"github.com/shashank-mugiwara/joyboy/task"
+	"github.com/shashank-mugiwara/joyboy/utils"
 	"gorm.io/gorm"
 )
 
@@ -77,6 +78,22 @@ func (w *Worker) StopTask(t *task.Task) task.DockerResult {
 		log.Println("No tasks found running with the given taskId: ", t.ID)
 		return task.DockerResult{
 			Error: errors.New("no tasks found running with the given task id"),
+		}
+	}
+
+	if !utils.IsBlank(runningTask.State) {
+		if runningTask.State == "Failed" {
+			log.Println("The given task was found in failed state. Removing the task as per request")
+			w.DB.Delete(runningTask)
+			return task.DockerResult{
+				Error:   errors.New("failed task was found, so deleted as per request"),
+				Message: "Failed Task found with given id: " + t.ID.String() + " deleted.",
+			}
+		}
+	} else {
+		return task.DockerResult{
+			Error:   errors.New("no tasks found for the given Id"),
+			Message: "Failed to stop task. No Task found with given id: " + t.ID.String(),
 		}
 	}
 

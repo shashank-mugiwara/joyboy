@@ -86,6 +86,11 @@ func (h *Handler) StopTask(c echo.Context) error {
 	}
 
 	result := h.worker.StopTask(&newTask)
+
+	if !utils.IsBlank(result.Error.Error()) {
+		return c.JSON(http.StatusBadRequest, result)
+	}
+
 	return c.JSON(http.StatusOK, result)
 }
 
