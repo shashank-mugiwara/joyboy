@@ -8,17 +8,14 @@ import (
 
 func CreateExposedPorts(portsMap map[string]interface{}) (nat.PortSet, error) {
 	exposedPorts := make(nat.PortSet)
-
-	// Iterate through the map; the keys are the port specifications.
 	for port := range portsMap {
-		// Create a Port using the nat package, which requires a protocol ("tcp" assumed here)
-		p, err := nat.NewPort("tcp", port) // Adjust protocol as necessary if different.
+		p, err := nat.NewPort("tcp", port)
 		if err != nil {
-			return nil, err // Return an error if the port format is incorrect.
+			return nil, err
 		}
-		exposedPorts[p] = struct{}{} // Add the port to the PortSet.
+		exposedPorts[p] = struct{}{}
 	}
-	return exposedPorts, nil // Return the populated PortSet.
+	return exposedPorts, nil
 }
 
 func CreatePortBindings(jsonBindings string) (nat.PortMap, error) {
@@ -30,7 +27,7 @@ func CreatePortBindings(jsonBindings string) (nat.PortMap, error) {
 
 	portMap := make(nat.PortMap)
 	for containerPort, hostPort := range bindings {
-		internalPort, err := nat.NewPort("tcp", containerPort) // Assuming tcp; adjust as necessary.
+		internalPort, err := nat.NewPort("tcp", containerPort)
 		if err != nil {
 			return nil, err
 		}
