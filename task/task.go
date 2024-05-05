@@ -56,8 +56,8 @@ type Task struct {
 	Name          string    `json:"name"`
 	State         string    `json:"state"`
 	Image         string    `json:"image"`
-	Memory        int       `json:"memory"`
-	Disk          int       `json:"disk"`
+	Memory        int64     `json:"memory"`
+	Disk          int64     `json:"disk"`
 	ExposedPorts  string    `json:"exposedPorts"`
 	PortBindings  string    `json:"portBindings"`
 	RestartPolicy string    `json:"restartPolicy"`
@@ -66,6 +66,7 @@ type Task struct {
 	FinishTime    time.Time `json:"finishTime"`
 	Duration      time.Time `json:"duration"`
 	ContainerID   string    `json:"containerId"`
+	Cpus          float32   `json:"cpus"`
 }
 
 type TaskEvent struct {
@@ -108,7 +109,8 @@ func (d *Docker) Run() DockerResult {
 	}
 
 	resources := container.Resources{
-		Memory: d.Config.Memory,
+		Memory:   d.Config.Memory * 1024 * 1024,
+		NanoCPUs: int64(d.Config.Cpus * 1e9),
 	}
 
 	containerConfig := container.Config{
