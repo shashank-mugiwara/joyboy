@@ -166,11 +166,8 @@ func RunTasks(w Worker) {
 			if result.Error != nil {
 				log.Printf("Error running task: %v", result.Error)
 			}
-		} else {
-			log.Printf("No tasks to process currently.")
 		}
 
-		log.Println("Sleeping for 5 seconds.")
 		time.Sleep(5 * time.Second)
 	}
 }

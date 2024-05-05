@@ -12,4 +12,5 @@ type Config struct {
 	Env           []string
 	RestartPolicy string
 	Cpus          float32
+	PortBindings  string
 }

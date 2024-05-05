@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/google/uuid"
 	"github.com/shashank-mugiwara/joyboy/config"
+	"github.com/shashank-mugiwara/joyboy/utils"
 )
 
 type State int
@@ -113,15 +115,42 @@ func (d *Docker) Run() DockerResult {
 		NanoCPUs: int64(d.Config.Cpus * 1e9),
 	}
 
-	containerConfig := container.Config{
-		Image: d.Config.Image,
-		Env:   d.Config.Env,
+	var result map[string]interface{}
+	err = json.Unmarshal([]byte(d.Config.PortBindings), &result)
+	if err != nil {
+		log.Fatalf("Error parsing JSON: %s", err)
+		return DockerResult{Error: err}
+	}
+
+	json_string, err := json.Marshal(result)
+	if err != nil {
+		log.Fatalf("Error parsing JSON: %s", err)
+		return DockerResult{Error: err}
+	}
+
+	portBindings, err := utils.CreatePortBindings(string(json_string))
+	if err != nil {
+		log.Printf("Error parsing PortBindings: %v\n", err)
+		return DockerResult{Error: err}
 	}
 
 	hostConfig := container.HostConfig{
 		RestartPolicy:   restartPolicy,
 		Resources:       resources,
-		PublishAllPorts: true,
+		PortBindings:    portBindings,
+		PublishAllPorts: false,
+	}
+
+	exposed_ports, err := utils.CreateExposedPorts(result)
+	if err != nil {
+		log.Printf("Error parsing PortBindings: %v\n", d.Config.PortBindings)
+		return DockerResult{Error: err}
+	}
+
+	containerConfig := container.Config{
+		Image:        d.Config.Image,
+		Env:          d.Config.Env,
+		ExposedPorts: exposed_ports,
 	}
 
 	resp, err := d.Client.ContainerCreate(
@@ -175,9 +204,10 @@ func (d *Docker) Stop(id string) DockerResult {
 
 func (t *Task) NewConfig(task *Task) config.Config {
 	return config.Config{
-		Name:   task.Name,
-		Image:  task.Image,
-		Memory: int64(task.Memory),
+		Name:         task.Name,
+		Image:        task.Image,
+		Memory:       int64(task.Memory),
+		PortBindings: task.PortBindings,
 	}
 }
 
