@@ -11,4 +11,6 @@ type Config struct {
 	Disk          int64
 	Env           []string
 	RestartPolicy string
+	Cpus          float32
+	PortBindings  string
 }

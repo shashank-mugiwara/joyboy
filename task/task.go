@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/google/uuid"
 	"github.com/shashank-mugiwara/joyboy/config"
+	"github.com/shashank-mugiwara/joyboy/utils"
 )
 
 type State int
@@ -56,8 +58,8 @@ type Task struct {
 	Name          string    `json:"name"`
 	State         string    `json:"state"`
 	Image         string    `json:"image"`
-	Memory        int       `json:"memory"`
-	Disk          int       `json:"disk"`
+	Memory        int64     `json:"memory"`
+	Disk          int64     `json:"disk"`
 	ExposedPorts  string    `json:"exposedPorts"`
 	PortBindings  string    `json:"portBindings"`
 	RestartPolicy string    `json:"restartPolicy"`
@@ -66,6 +68,7 @@ type Task struct {
 	FinishTime    time.Time `json:"finishTime"`
 	Duration      time.Time `json:"duration"`
 	ContainerID   string    `json:"containerId"`
+	Cpus          float32   `json:"cpus"`
 }
 
 type TaskEvent struct {
@@ -108,18 +111,46 @@ func (d *Docker) Run() DockerResult {
 	}
 
 	resources := container.Resources{
-		Memory: d.Config.Memory,
+		Memory:   d.Config.Memory * 1024 * 1024,
+		NanoCPUs: int64(d.Config.Cpus * 1e9),
 	}
 
-	containerConfig := container.Config{
-		Image: d.Config.Image,
-		Env:   d.Config.Env,
+	var result map[string]interface{}
+	err = json.Unmarshal([]byte(d.Config.PortBindings), &result)
+	if err != nil {
+		log.Fatalf("Error parsing JSON: %s", err)
+		return DockerResult{Error: err}
+	}
+
+	json_string, err := json.Marshal(result)
+	if err != nil {
+		log.Fatalf("Error parsing JSON: %s", err)
+		return DockerResult{Error: err}
+	}
+
+	portBindings, err := utils.CreatePortBindings(string(json_string))
+	if err != nil {
+		log.Printf("Error parsing PortBindings: %v\n", err)
+		return DockerResult{Error: err}
 	}
 
 	hostConfig := container.HostConfig{
 		RestartPolicy:   restartPolicy,
 		Resources:       resources,
-		PublishAllPorts: true,
+		PortBindings:    portBindings,
+		PublishAllPorts: false,
+	}
+
+	exposed_ports, err := utils.CreateExposedPorts(result)
+	if err != nil {
+		log.Printf("Error parsing PortBindings: %v\n", d.Config.PortBindings)
+		return DockerResult{Error: err}
+	}
+
+	containerConfig := container.Config{
+		Image:        d.Config.Image,
+		Env:          d.Config.Env,
+		ExposedPorts: exposed_ports,
 	}
 
 	resp, err := d.Client.ContainerCreate(
@@ -173,9 +204,10 @@ func (d *Docker) Stop(id string) DockerResult {
 
 func (t *Task) NewConfig(task *Task) config.Config {
 	return config.Config{
-		Name:   task.Name,
-		Image:  task.Image,
-		Memory: int64(task.Memory),
+		Name:         task.Name,
+		Image:        task.Image,
+		Memory:       int64(task.Memory),
+		PortBindings: task.PortBindings,
 	}
 }
 
