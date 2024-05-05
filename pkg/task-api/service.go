@@ -27,7 +27,22 @@ func (h *Handler) StartTask(c echo.Context) error {
 	}
 
 	var existingTask task.Task
-	result := h.DB.Where(&task.Task{Name: req.Name}).Take(&existingTask)
+	result := h.DB.Where(&task.Task{Name: req.Name, State: "Scheduled"}).Take(&existingTask)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		result.Error = nil
+	}
+
+	if result.Error != nil {
+		c.Logger().Info("Failed to fetch entries from db. Error is: ", result.Error.Error())
+		return c.JSON(http.StatusBadRequest, result.Error)
+	}
+
+	if existingTask.Name == req.Name {
+		return c.JSON(http.StatusBadRequest, "Container with name: "+req.Name+" is already Scheduled to run. Please wait for the container to start or remove the scheduled container and try again.")
+	}
+
+	result = h.DB.Where(&task.Task{Name: req.Name, State: "Running"}).Take(&existingTask)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		result.Error = nil
@@ -41,6 +56,7 @@ func (h *Handler) StartTask(c echo.Context) error {
 	if existingTask.Name == req.Name {
 		return c.JSON(http.StatusBadRequest, "Container with name: "+req.Name+" is already running. Please stop this container and try again")
 	}
+
 	port_mapping_string, err := json.Marshal(req.PortMapping)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, "Failed to marshall portMapping. Error is: "+err.Error())
