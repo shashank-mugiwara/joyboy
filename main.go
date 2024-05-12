@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/shashank-mugiwara/joyboy/database"
+	"github.com/shashank-mugiwara/joyboy/dkrclient"
 	"github.com/shashank-mugiwara/joyboy/migrate"
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
@@ -27,6 +28,7 @@ func main() {
 	r.Use(middleware.Recover())
 	database.InitDb()
 	migrate.AutoMigrate()
+	dkrclient.InitPlainDockerClient()
 
 	w := worker.Worker{
 		Queue: queue.New(),
