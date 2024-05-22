@@ -39,8 +39,6 @@ func InitBackgroundScheduler() {
 	}
 }
 
-func (s *Scheduler) HealthChecks() {}
-
 func (s *Scheduler) RunningDockerContainersOnMachine() {
 	docker_client := dkrclient.GetPlainDockerClient()
 	if docker_client == nil {
