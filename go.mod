@@ -7,6 +7,11 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/uuid v1.6.0
+	github.com/labstack/echo/v4 v4.11.4
+	github.com/labstack/gommon v0.4.2
+	gopkg.in/go-playground/validator.v9 v9.31.0
+	gorm.io/driver/sqlite v1.5.5
+	gorm.io/gorm v1.25.9
 )
 
 require (
@@ -30,11 +35,10 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
+	github.com/jasonlvhit/gocron v0.0.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
-	github.com/labstack/echo/v4 v4.11.4 // indirect
-	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -60,8 +64,5 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
-	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
-	gorm.io/driver/sqlite v1.5.5 // indirect
-	gorm.io/gorm v1.25.9 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )
