@@ -11,5 +11,10 @@ func AutoMigrate() error {
 		return err
 	}
 
+	err = database.GetDb().AutoMigrate(&task.Local{})
+	if err != nil {
+		return err
+	}
+
 	return err
 }

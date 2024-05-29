@@ -2,7 +2,7 @@ package task
 
 type Local struct {
 	Name        string
-	PortMapping map[string]string
+	PortMapping string
 	Cpu         float64
 	Memory      float64
 	ContainerID string
