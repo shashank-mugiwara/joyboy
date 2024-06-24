@@ -11,9 +11,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/shashank-mugiwara/joyboy/database"
+	"github.com/shashank-mugiwara/joyboy/dkrclient"
 	"github.com/shashank-mugiwara/joyboy/migrate"
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
+	"github.com/shashank-mugiwara/joyboy/scheduler"
 	"github.com/shashank-mugiwara/joyboy/worker"
 	"gorm.io/gorm"
 )
@@ -27,6 +29,7 @@ func main() {
 	r.Use(middleware.Recover())
 	database.InitDb()
 	migrate.AutoMigrate()
+	dkrclient.InitPlainDockerClient()
 
 	w := worker.Worker{
 		Queue: queue.New(),
@@ -47,6 +50,10 @@ func main() {
 	r.Logger.Info("Worker initialized and are Ready...")
 	go worker.RunTasks(w)
 	r.Logger.Info("Workers are now listening to their worker queue.")
+
+	r.Logger.Info("Running background scheduler")
+	go scheduler.InitBackgroundScheduler()
+	r.Logger.Info("Initiated background scheduler.")
 
 	<-ctx.Done()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
