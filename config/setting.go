@@ -14,10 +14,13 @@ type Application struct {
 var ApplicationSetting = &Application{}
 
 type Database struct {
-	DbType      string
-	DbPort      string
-	ConnectMode string
-	Volume      string
+	DbType     string
+	DbPort     int
+	DbUsername string
+	DbPassword string
+	DbName     string
+	DbTimezone string
+	SSLMode    string
 }
 
 var DatabaseSetting = &Database{}
