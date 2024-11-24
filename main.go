@@ -10,6 +10,7 @@ import (
 	"github.com/golang-collections/collections/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/shashank-mugiwara/joyboy/config"
 	"github.com/shashank-mugiwara/joyboy/database"
 	"github.com/shashank-mugiwara/joyboy/dkrclient"
 	"github.com/shashank-mugiwara/joyboy/migrate"
@@ -27,6 +28,10 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 func main() {
 	r := router.New()
 	r.Use(middleware.Recover())
+
+	// Read Configs
+	config.SetUp("")
+
 	database.InitDb()
 	migrate.AutoMigrate()
 	dkrclient.InitPlainDockerClient()
