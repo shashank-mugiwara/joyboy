@@ -26,7 +26,10 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 func main() {
 	r := router.New()
 	r.Use(middleware.Recover())
+
+	// Read Configs
 	config.SetUp("")
+
 	database.InitDb()
 	migrate.AutoMigrate()
 
