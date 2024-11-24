@@ -38,19 +38,19 @@ func InitDb() {
 		handleDatabaseInit(dbType, "", 0, "", "", "", "")
 	} else {
 		if utils.IsBlank(dbName) {
-
+			log.Fatalln("DbName is missing, cannot configure db without it. Exiting ...")
 		}
 
 		if utils.IsBlank(dbUsername) {
-
+			log.Fatalln("DbUsername is missing, cannot configure db without it. Exiting ...")
 		}
 
 		if dbPort == 0 {
-
+			log.Fatalln("DbPort is missing, cannot configure db without it. Exiting ...")
 		}
 
 		if utils.IsBlank(dbPassword) {
-
+			log.Fatalln("DbPassword is missing, cannot configure db without it. Exiting ...")
 		}
 
 		if utils.IsBlank(dbTimeZone) {
