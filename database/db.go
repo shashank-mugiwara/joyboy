@@ -62,6 +62,8 @@ func InitDb() {
 			log.Println("SSL not properly specified. Going with disabled ssl by default")
 			dbConnSslEnabled = "disabled"
 		}
+
+		handleDatabaseInit(dbType, dbName, dbPort, dbUsername, dbPassword, dbTimeZone, dbConnSslEnabled)
 	}
 }
 
