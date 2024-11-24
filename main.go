@@ -10,6 +10,7 @@ import (
 	"github.com/golang-collections/collections/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/shashank-mugiwara/joyboy/config"
 	"github.com/shashank-mugiwara/joyboy/database"
 	"github.com/shashank-mugiwara/joyboy/migrate"
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
@@ -25,6 +26,7 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 func main() {
 	r := router.New()
 	r.Use(middleware.Recover())
+	config.SetUp("")
 	database.InitDb()
 	migrate.AutoMigrate()
 
