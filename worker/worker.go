@@ -1,11 +1,13 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 
+	containerTypes "github.com/docker/docker/api/types/container"
 	"github.com/golang-collections/collections/queue"
 	"github.com/shashank-mugiwara/joyboy/task"
 	"github.com/shashank-mugiwara/joyboy/utils"
@@ -143,6 +145,12 @@ func (w *Worker) StartTask(t *task.Task) task.DockerResult {
 	if result.Error != nil {
 		log.Printf("Error running task %v: %v\n", t.ID, result.Error)
 		t.State = task.Failed.String()
+
+		err := d.Client.ContainerRemove(context.Background(), d.Config.Name, containerTypes.RemoveOptions{Force: true})
+		if err != nil {
+			log.Printf("Failed to remove container. Error is %+v\n", err)
+		}
+
 		return task.DockerResult{
 			Error:       result.Error,
 			ContainerId: t.ContainerID,
