@@ -33,11 +33,10 @@ type ContainersOnLocal struct {
 
 func InitBackgroundScheduler() {
 	scheduler_instance := Scheduler{}
-	timer := time.NewTimer(10 * time.Second)
-	for {
-		<-timer.C
+	ticker := time.NewTicker(10 * time.Second)
+
+	for range ticker.C {
 		scheduler_instance.RunningDockerContainersOnMachine()
-		timer.Reset(10 * time.Second)
 	}
 }
 
