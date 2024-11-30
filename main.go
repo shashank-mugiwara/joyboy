@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/golang-collections/collections/queue"
@@ -17,6 +19,7 @@ import (
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
 	"github.com/shashank-mugiwara/joyboy/scheduler"
+	"github.com/shashank-mugiwara/joyboy/task"
 	"github.com/shashank-mugiwara/joyboy/worker"
 	"gorm.io/gorm"
 )
@@ -43,8 +46,9 @@ func main() {
 
 	HandleRoutes(r, w, database.GetDb())
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+
 	// Start server
 	go func() {
 		if err := r.Start(":8070"); err != nil && err != http.ErrServerClosed {
@@ -60,10 +64,19 @@ func main() {
 	go scheduler.InitBackgroundScheduler()
 	r.Logger.Info("Initiated background scheduler.")
 
-	<-ctx.Done()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	sig := <-signalCh
+	log.Printf("Received signal: %v\n", sig)
+	log.Printf("Stopping all running containers gracefully")
+
+	task.StopAllTasks()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	// Shutdown the server gracefully
 	if err := r.Shutdown(ctx); err != nil {
-		r.Logger.Fatal(err)
+		log.Fatalf("Server shutdown failed: %v\n", err)
 	}
+
+	log.Println("Server shutdown gracefully")
 }

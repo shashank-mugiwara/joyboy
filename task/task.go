@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/google/uuid"
 	"github.com/shashank-mugiwara/joyboy/config"
+	"github.com/shashank-mugiwara/joyboy/database"
 	"github.com/shashank-mugiwara/joyboy/utils"
 )
 
@@ -26,6 +27,7 @@ const (
 	Running
 	Completed
 	Failed
+	Stopped
 )
 
 func (s State) String() string {
@@ -40,6 +42,8 @@ func (s State) String() string {
 		return "Completed"
 	case Failed:
 		return "Failed"
+	case Stopped:
+		return "Stopped"
 	default:
 		return fmt.Sprintf("Unknown state: %d", s)
 	}
@@ -237,4 +241,33 @@ func Contains(states []string, state string) bool {
 
 func ValidStateTransition(src string, dst string) bool {
 	return Contains(stateTransitionMap[src], dst)
+}
+
+func StopAllTasks() {
+	ctx := context.Background()
+	dc, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		fmt.Printf("error creating docker client %v\n", err)
+		panic(err)
+	}
+
+	containers, err := dc.ContainerList(ctx, container.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	for _, cntr := range containers {
+		fmt.Print("Stopping container ", cntr.ID[:10], "... ")
+		noWaitTimeout := 0
+		if err := dc.ContainerStop(ctx, cntr.ID, container.StopOptions{Timeout: &noWaitTimeout}); err != nil {
+			panic(err)
+		}
+
+		if err := dc.ContainerRemove(ctx, cntr.ID, container.RemoveOptions{RemoveVolumes: true, Force: true}); err != nil {
+			panic(err)
+		}
+
+		// Update DB entry
+		database.GetDb().Model(&Task{}).Where("container_id = ?", cntr.ID).Update("state", Stopped.String())
+	}
 }
