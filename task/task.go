@@ -49,6 +49,15 @@ func (s State) String() string {
 	}
 }
 
+var KnownContainerStateMap = map[string]string{
+	"Pending":   "Pending",
+	"Scheduled": "Scheduled",
+	"Running":   "Running",
+	"Completed": "Completed",
+	"Failed":    "Failed",
+	"Stopped":   "Stopped",
+}
+
 var stateTransitionMap = map[string][]string{
 	"Pending":   {"Scheduled"},
 	"Scheduled": {"Scheduled", "Running", "Failed"},

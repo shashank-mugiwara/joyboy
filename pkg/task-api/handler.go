@@ -20,8 +20,8 @@ func NewHandler(w worker.Worker, db *gorm.DB) *Handler {
 
 func (h *Handler) InitRoutes(e *echo.Echo) {
 	task_route := e.Group("/api/v1/task")
+	task_route.GET("", h.GetListOfRunningTasks)
 	task_route.POST("/add", h.StartTask)
 	task_route.POST("/stop", h.StopTask)
-	task_route.GET("/tasks", h.GetListOfRunningTasks)
 	task_route.GET("/:id", h.GetSingleTaskInformation)
 }
