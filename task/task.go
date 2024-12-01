@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shashank-mugiwara/joyboy/config"
 	"github.com/shashank-mugiwara/joyboy/database"
-	"github.com/shashank-mugiwara/joyboy/utils"
+	"github.com/shashank-mugiwara/joyboy/dkrclient"
 )
 
 type State int
@@ -141,7 +141,7 @@ func (d *Docker) Run() DockerResult {
 		return DockerResult{Error: err}
 	}
 
-	portBindings, err := utils.CreatePortBindings(string(json_string))
+	portBindings, err := dkrclient.ConstructNatPortMap(string(json_string))
 	if err != nil {
 		log.Printf("Error parsing PortBindings: %v\n", err)
 		return DockerResult{Error: err}
@@ -154,7 +154,7 @@ func (d *Docker) Run() DockerResult {
 		PublishAllPorts: false,
 	}
 
-	exposed_ports, err := utils.CreateExposedPorts(result)
+	exposed_ports, err := dkrclient.ConstructNatPortSet(result)
 	if err != nil {
 		log.Printf("Error parsing PortBindings: %v\n", d.Config.PortBindings)
 		return DockerResult{Error: err}
@@ -250,6 +250,12 @@ func Contains(states []string, state string) bool {
 
 func ValidStateTransition(src string, dst string) bool {
 	return Contains(stateTransitionMap[src], dst)
+}
+
+func GetTasksPerState(state string) []Task {
+	var tasks []Task
+	database.GetDb().Where("state = ?", state).First(&tasks)
+	return tasks
 }
 
 func StopAllTasks() {

@@ -119,7 +119,6 @@ func (h *Handler) StopTask(c echo.Context) error {
 }
 
 func (h *Handler) GetListOfRunningTasks(c echo.Context) error {
-	var tasks []task.Task
 	state := c.QueryParam("state")
 	if utils.IsBlank(state) {
 		state = "Running"
@@ -130,7 +129,7 @@ func (h *Handler) GetListOfRunningTasks(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid State"})
 	}
 
-	h.DB.Where("state = ?", state).First(&tasks)
+	tasks := task.GetTasksPerState(state)
 	return c.JSON(http.StatusOK, tasks)
 }
 
