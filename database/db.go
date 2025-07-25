@@ -27,9 +27,9 @@ func InitDb() {
 	dbTimeZone := config.DatabaseSetting.DbTimezone
 	dbConnSslEnabled := config.DatabaseSetting.SSLMode
 
-	if utils.IsBlank(dbType) {
+	if !utils.IsBlank(dbType) {
 		_, ok := presetup.DockerImageToRepoMap[dbType]
-		if !ok {
+		if !ok && dbType != "sqlite" {
 			log.Fatalln("DbType given is not supported. Exiting ...")
 		}
 	}

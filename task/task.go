@@ -254,7 +254,7 @@ func ValidStateTransition(src string, dst string) bool {
 
 func GetTasksPerState(state string) []Task {
 	var tasks []Task
-	database.GetDb().Where("state = ?", state).First(&tasks)
+	database.GetDb().Where("state = ?", state).Find(&tasks)
 	return tasks
 }
 
