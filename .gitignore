@@ -1,3 +1,5 @@
 store/
 joyboy
 joyboy
+__pycache__/
+*.pyc
