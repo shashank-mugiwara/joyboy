@@ -24,6 +24,20 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	serverPort                   = ":8070"
+	shutdownTimeout              = 30 * time.Second
+	msgServerShutdown            = "shutting down the server"
+	msgWorkerInitialized         = "Worker initialized and are Ready..."
+	msgWorkersListening          = "Workers are now listening to their worker queue."
+	msgSchedulerRunning          = "Running background scheduler"
+	msgSchedulerInitiated        = "Initiated background scheduler."
+	msgReceivedSignal            = "Received signal: %v\n"
+	msgStoppingContainers        = "Stopping all running containers gracefully"
+	msgServerShutdownFailed      = "Server shutdown failed: %v\n"
+	msgServerShutdownGracefully  = "Server shutdown gracefully"
+)
+
 func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 	taskapi.NewHandler(w, db).InitRoutes(r)
 }
@@ -51,32 +65,32 @@ func main() {
 
 	// Start server
 	go func() {
-		if err := r.Start(":8070"); err != nil && err != http.ErrServerClosed {
-			r.Logger.Fatal("shutting down the server")
+		if err := r.Start(serverPort); err != nil && err != http.ErrServerClosed {
+			r.Logger.Fatal(msgServerShutdown)
 		}
 	}()
 
-	r.Logger.Info("Worker initialized and are Ready...")
+	r.Logger.Info(msgWorkerInitialized)
 	go worker.RunTasks(w)
-	r.Logger.Info("Workers are now listening to their worker queue.")
+	r.Logger.Info(msgWorkersListening)
 
-	r.Logger.Info("Running background scheduler")
+	r.Logger.Info(msgSchedulerRunning)
 	go scheduler.InitBackgroundScheduler()
-	r.Logger.Info("Initiated background scheduler.")
+	r.Logger.Info(msgSchedulerInitiated)
 
 	sig := <-signalCh
-	log.Printf("Received signal: %v\n", sig)
-	log.Printf("Stopping all running containers gracefully")
+	log.Printf(msgReceivedSignal, sig)
+	log.Printf(msgStoppingContainers)
 
 	task.StopAllTasks()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	// Shutdown the server gracefully
 	if err := r.Shutdown(ctx); err != nil {
-		log.Fatalf("Server shutdown failed: %v\n", err)
+		log.Fatalf(msgServerShutdownFailed, err)
 	}
 
-	log.Println("Server shutdown gracefully")
+	log.Println(msgServerShutdownGracefully)
 }
