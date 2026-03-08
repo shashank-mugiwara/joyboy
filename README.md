@@ -13,7 +13,7 @@ joyboy exposes REST based endpoints to add/update the task configurations. New c
 
 Example to add a task:
 ```sh
-curl '{server-url}:8080/api/v1/task/stop' \
+curl '{server-url}:8080/api/v1/task/add' \
 --header 'Content-Type: application/json' \
 --data '{
     "name": "nginx-apac-001",
