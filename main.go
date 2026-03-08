@@ -51,7 +51,7 @@ func main() {
 
 	// Start server
 	go func() {
-		if err := r.Start(":8070"); err != nil && err != http.ErrServerClosed {
+		if err := r.Start(":" + config.ApplicationSetting.Port); err != nil && err != http.ErrServerClosed {
 			r.Logger.Fatal("shutting down the server")
 		}
 	}()
