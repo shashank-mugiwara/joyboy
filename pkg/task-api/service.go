@@ -152,3 +152,9 @@ func (h *Handler) GetSingleTaskInformation(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, runningTask)
 }
+
+func (h *Handler) Health(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]string{
+		"status": "healthy",
+	})
+}
