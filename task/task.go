@@ -131,13 +131,13 @@ func (d *Docker) Run() DockerResult {
 	var result map[string]interface{}
 	err = json.Unmarshal([]byte(d.Config.PortBindings), &result)
 	if err != nil {
-		log.Fatalf("Error parsing JSON: %s", err)
+		log.Printf("Error parsing JSON: %s", err)
 		return DockerResult{Error: err}
 	}
 
 	json_string, err := json.Marshal(result)
 	if err != nil {
-		log.Fatalf("Error parsing JSON: %s", err)
+		log.Printf("Error parsing JSON: %s", err)
 		return DockerResult{Error: err}
 	}
 
@@ -203,13 +203,14 @@ func (d *Docker) Stop(id string) DockerResult {
 	ctx := context.Background()
 	err := d.Client.ContainerStop(ctx, id, container.StopOptions{})
 	if err != nil {
-		fmt.Println(err)
-		panic(err)
+		log.Printf("Error stopping container %s: %v", id, err)
+		return DockerResult{Action: "stop", Result: "failure", Error: err}
 	}
 
 	err = d.Client.ContainerRemove(ctx, id, container.RemoveOptions{})
 	if err != nil {
-		panic(err)
+		log.Printf("Error removing container %s: %v", id, err)
+		return DockerResult{Action: "stop", Result: "failure", Error: err}
 	}
 
 	return DockerResult{Action: "stop", Result: "success", Error: nil}
@@ -224,18 +225,18 @@ func (t *Task) NewConfig(task *Task) config.Config {
 	}
 }
 
-func (t *Task) NewDocker(conf config.Config) Docker {
+func (t *Task) NewDocker(conf config.Config) (Docker, error) {
 	dc, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 
 	if err != nil {
-		fmt.Printf("error creating docker client %v\n", err)
-		panic(err)
+		log.Printf("error creating docker client %v\n", err)
+		return Docker{}, err
 	}
 
 	return Docker{
 		Config: conf,
 		Client: dc,
-	}
+	}, nil
 }
 
 func Contains(states []string, state string) bool {
@@ -262,24 +263,27 @@ func StopAllTasks() {
 	ctx := context.Background()
 	dc, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		fmt.Printf("error creating docker client %v\n", err)
-		panic(err)
+		log.Printf("error creating docker client %v\n", err)
+		return
 	}
 
 	containers, err := dc.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
-		panic(err)
+		log.Printf("error listing containers: %v\n", err)
+		return
 	}
 
 	for _, cntr := range containers {
 		fmt.Print("Stopping container ", cntr.ID[:10], "... ")
 		noWaitTimeout := 0
 		if err := dc.ContainerStop(ctx, cntr.ID, container.StopOptions{Timeout: &noWaitTimeout}); err != nil {
-			panic(err)
+			log.Printf("error stopping container %s: %v\n", cntr.ID, err)
+			continue
 		}
 
 		if err := dc.ContainerRemove(ctx, cntr.ID, container.RemoveOptions{RemoveVolumes: true, Force: true}); err != nil {
-			panic(err)
+			log.Printf("error removing container %s: %v\n", cntr.ID, err)
+			continue
 		}
 
 		// Update DB entry

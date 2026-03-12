@@ -17,7 +17,7 @@ func PollContainerMetrics(containerID string) (types.StatsJSON, error) {
 
 	stats, err := dockerClient.ContainerStats(ctx, containerID, false)
 	if err != nil {
-		log.Fatalf("Error getting container stats: %s", err)
+		return types.StatsJSON{}, err
 	}
 	defer stats.Body.Close()
 
@@ -27,7 +27,7 @@ func PollContainerMetrics(containerID string) (types.StatsJSON, error) {
 		if err == io.EOF {
 			fmt.Println("No more data in stats stream.")
 		} else {
-			log.Fatalf("Error decoding stats: %s", err)
+			return stat, err
 		}
 	} else {
 		fmt.Printf("Container: %s\n", containerID)
