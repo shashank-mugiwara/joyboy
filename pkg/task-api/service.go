@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/shashank-mugiwara/joyboy/pkg/logging"
 	"github.com/shashank-mugiwara/joyboy/task"
 	"github.com/shashank-mugiwara/joyboy/utils"
 	"gorm.io/gorm"
@@ -34,7 +35,10 @@ func (h *Handler) StartTask(c echo.Context) error {
 	}
 
 	if result.Error != nil {
-		c.Logger().Info("Failed to fetch entries from db. Error is: ", result.Error.Error())
+		logging.LogWithRequestID(c, h.logger, logging.ERROR, "Failed to fetch scheduled tasks from db", map[string]interface{}{
+			"error": result.Error.Error(),
+			"name":  req.Name,
+		})
 		return c.JSON(http.StatusBadRequest, result.Error)
 	}
 
@@ -49,7 +53,10 @@ func (h *Handler) StartTask(c echo.Context) error {
 	}
 
 	if result.Error != nil {
-		c.Logger().Info("Failed to fetch entries from db. Error is: ", result.Error.Error())
+		logging.LogWithRequestID(c, h.logger, logging.ERROR, "Failed to fetch running tasks from db", map[string]interface{}{
+			"error": result.Error.Error(),
+			"name":  req.Name,
+		})
 		return c.JSON(http.StatusBadRequest, result.Error)
 	}
 
@@ -74,12 +81,18 @@ func (h *Handler) StartTask(c echo.Context) error {
 
 	result = h.DB.Save(newTask)
 	if result.Error != nil {
-		c.Logger().Info("Failed to save entried to db. Error is: ", result.Error.Error())
+		logging.LogWithRequestID(c, h.logger, logging.ERROR, "Failed to save task to db", map[string]interface{}{
+			"error": result.Error.Error(),
+			"name":  newTask.Name,
+		})
 		return c.JSON(http.StatusBadRequest, result.Error)
 	}
 
 	h.worker.AddTask(newTask)
-	c.Logger().Info("Task successfully submitted to queue.")
+	logging.LogWithRequestID(c, h.logger, logging.INFO, "Task successfully submitted to queue", map[string]interface{}{
+		"task_id": newTask.ID.String(),
+		"name":    newTask.Name,
+	})
 
 	taskResponse := TaskResponse{
 		Image: newTask.Image,

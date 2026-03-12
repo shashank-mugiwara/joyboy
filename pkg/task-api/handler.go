@@ -2,6 +2,7 @@ package taskapi
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/shashank-mugiwara/joyboy/pkg/logging"
 	"github.com/shashank-mugiwara/joyboy/worker"
 	"gorm.io/gorm"
 )
@@ -9,12 +10,14 @@ import (
 type Handler struct {
 	worker worker.Worker
 	DB     *gorm.DB
+	logger *logging.Logger
 }
 
 func NewHandler(w worker.Worker, db *gorm.DB) *Handler {
 	return &Handler{
 		worker: w,
 		DB:     db,
+		logger: logging.GetDefaultLogger(),
 	}
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +15,7 @@ import (
 	"github.com/shashank-mugiwara/joyboy/database"
 	"github.com/shashank-mugiwara/joyboy/dkrclient"
 	"github.com/shashank-mugiwara/joyboy/migrate"
+	"github.com/shashank-mugiwara/joyboy/pkg/logging"
 	taskapi "github.com/shashank-mugiwara/joyboy/pkg/task-api"
 	"github.com/shashank-mugiwara/joyboy/router"
 	"github.com/shashank-mugiwara/joyboy/scheduler"
@@ -31,6 +31,9 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 func main() {
 	r := router.New()
 	r.Use(middleware.Recover())
+
+	// Initialize structured logger
+	logger := logging.GetDefaultLogger()
 
 	// Read Configs
 	config.SetUp("")
@@ -52,21 +55,25 @@ func main() {
 	// Start server
 	go func() {
 		if err := r.Start(":8070"); err != nil && err != http.ErrServerClosed {
-			r.Logger.Fatal("shutting down the server")
+			logger.Fatal("shutting down the server", map[string]interface{}{
+				"error": err.Error(),
+			})
 		}
 	}()
 
-	r.Logger.Info("Worker initialized and are Ready...")
+	logger.Info("Worker initialized and are Ready", nil)
 	go worker.RunTasks(w)
-	r.Logger.Info("Workers are now listening to their worker queue.")
+	logger.Info("Workers are now listening to their worker queue", nil)
 
-	r.Logger.Info("Running background scheduler")
+	logger.Info("Running background scheduler", nil)
 	go scheduler.InitBackgroundScheduler()
-	r.Logger.Info("Initiated background scheduler.")
+	logger.Info("Initiated background scheduler", nil)
 
 	sig := <-signalCh
-	log.Printf("Received signal: %v\n", sig)
-	log.Printf("Stopping all running containers gracefully")
+	logger.Info("Received signal", map[string]interface{}{
+		"signal": sig.String(),
+	})
+	logger.Info("Stopping all running containers gracefully", nil)
 
 	task.StopAllTasks()
 
@@ -75,8 +82,10 @@ func main() {
 
 	// Shutdown the server gracefully
 	if err := r.Shutdown(ctx); err != nil {
-		log.Fatalf("Server shutdown failed: %v\n", err)
+		logger.Fatal("Server shutdown failed", map[string]interface{}{
+			"error": err.Error(),
+		})
 	}
 
-	log.Println("Server shutdown gracefully")
+	logger.Info("Server shutdown gracefully", nil)
 }
