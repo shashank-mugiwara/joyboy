@@ -67,21 +67,21 @@ var stateTransitionMap = map[string][]string{
 }
 
 type Task struct {
-	ID            uuid.UUID `json:"id"`
-	Name          string    `json:"name"`
-	State         string    `json:"state"`
-	Image         string    `json:"image"`
-	Memory        int64     `json:"memory"`
-	Disk          int64     `json:"disk"`
-	ExposedPorts  string    `json:"exposedPorts"`
-	PortBindings  string    `json:"portBindings"`
-	RestartPolicy string    `json:"restartPolicy"`
-	StartTime     time.Time `json:"startTime"`
-	EndTime       time.Time `json:"endTime"`
-	FinishTime    time.Time `json:"finishTime"`
-	Duration      time.Time `json:"duration"`
-	ContainerID   string    `json:"containerId"`
-	Cpus          float32   `json:"cpus"`
+	ID            uuid.UUID `json:"id" bson:"id"`
+	Name          string    `json:"name" bson:"name"`
+	State         string    `json:"state" bson:"state"`
+	Image         string    `json:"image" bson:"image"`
+	Memory        int64     `json:"memory" bson:"memory"`
+	Disk          int64     `json:"disk" bson:"disk"`
+	ExposedPorts  string    `json:"exposedPorts" bson:"exposedPorts"`
+	PortBindings  string    `json:"portBindings" bson:"portBindings"`
+	RestartPolicy string    `json:"restartPolicy" bson:"restartPolicy"`
+	StartTime     time.Time `json:"startTime" bson:"startTime"`
+	EndTime       time.Time `json:"endTime" bson:"endTime"`
+	FinishTime    time.Time `json:"finishTime" bson:"finishTime"`
+	Duration      time.Time `json:"duration" bson:"duration"`
+	ContainerID   string    `json:"containerId" bson:"containerId"`
+	Cpus          float32   `json:"cpus" bson:"cpus"`
 }
 
 type TaskEvent struct {
