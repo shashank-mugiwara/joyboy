@@ -24,7 +24,12 @@ import (
 	"gorm.io/gorm"
 )
 
+func HealthHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+}
+
 func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
+	r.GET("/healthz", HealthHandler)
 	taskapi.NewHandler(w, db).InitRoutes(r)
 }
 
