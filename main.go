@@ -25,6 +25,9 @@ import (
 )
 
 func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
+	r.GET("/ping", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]bool{"pong": true})
+	})
 	taskapi.NewHandler(w, db).InitRoutes(r)
 }
 
