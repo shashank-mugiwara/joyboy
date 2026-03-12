@@ -72,7 +72,10 @@ func (w *Worker) RunTask() task.DockerResult {
 
 func (w *Worker) StopTask(t *task.Task) task.DockerResult {
 	config := t.NewConfig(t)
-	d := t.NewDocker(config)
+	d, err := t.NewDocker(config)
+	if err != nil {
+		return task.DockerResult{Error: err}
+	}
 
 	var runningTask task.Task
 	getResult := w.DB.First(&runningTask, t.ID)
@@ -138,7 +141,10 @@ func (w *Worker) StopTask(t *task.Task) task.DockerResult {
 func (w *Worker) StartTask(t *task.Task) task.DockerResult {
 	t.StartTime = time.Now().UTC()
 	config := t.NewConfig(t)
-	d := t.NewDocker(config)
+	d, err := t.NewDocker(config)
+	if err != nil {
+		return task.DockerResult{Error: err}
+	}
 
 	result := d.Run()
 

@@ -49,7 +49,8 @@ func (s *Scheduler) RunningDockerContainersOnMachine() {
 
 	containers, err := docker_client.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
-		panic(err)
+		log.Printf("Error listing containers: %v", err)
+		return
 	}
 
 	var containerList []ContainersOnLocal
@@ -58,18 +59,21 @@ func (s *Scheduler) RunningDockerContainersOnMachine() {
 		stats, err := docker_client.ContainerStats(context.Background(), c.ID, false)
 
 		if err != nil {
-			panic(err)
+			log.Printf("Error getting container stats for %s: %v", c.ID, err)
+			continue
 		}
 		defer stats.Body.Close()
 
 		var containerStats ContainerStats
 		if err := json.NewDecoder(stats.Body).Decode(&containerStats); err != nil {
-			panic(err)
+			log.Printf("Error decoding container stats for %s: %v", c.ID, err)
+			continue
 		}
 
 		containerJSON, err := docker_client.ContainerInspect(context.Background(), c.ID)
 		if err != nil {
-			panic(err)
+			log.Printf("Error inspecting container %s: %v", c.ID, err)
+			continue
 		}
 
 		portMappingsStr := formatPortMappings(containerJSON.NetworkSettings.Ports)
