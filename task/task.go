@@ -271,6 +271,7 @@ func StopAllTasks() {
 		panic(err)
 	}
 
+	var containerIDs []string
 	for _, cntr := range containers {
 		fmt.Print("Stopping container ", cntr.ID[:10], "... ")
 		noWaitTimeout := 0
@@ -281,8 +282,11 @@ func StopAllTasks() {
 		if err := dc.ContainerRemove(ctx, cntr.ID, container.RemoveOptions{RemoveVolumes: true, Force: true}); err != nil {
 			panic(err)
 		}
+		containerIDs = append(containerIDs, cntr.ID)
+	}
 
-		// Update DB entry
-		database.GetDb().Model(&Task{}).Where("container_id = ?", cntr.ID).Update("state", Stopped.String())
+	// Update DB entry
+	if len(containerIDs) > 0 {
+		database.GetDb().Model(&Task{}).Where("container_id IN ?", containerIDs).Update("state", Stopped.String())
 	}
 }
