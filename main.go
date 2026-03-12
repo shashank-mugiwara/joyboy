@@ -28,6 +28,10 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 	taskapi.NewHandler(w, db).InitRoutes(r)
 }
 
+func HealthHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+}
+
 func main() {
 	r := router.New()
 	r.Use(middleware.Recover())
@@ -45,6 +49,7 @@ func main() {
 	}
 
 	HandleRoutes(r, w, database.GetDb())
+	r.GET("/healthz", HealthHandler)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
