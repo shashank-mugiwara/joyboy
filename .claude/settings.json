@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "archex": {
+      "type": "stdio",
+      "command": "archex",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}
