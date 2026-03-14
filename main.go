@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +29,18 @@ func HandleRoutes(r *echo.Echo, w worker.Worker, db *gorm.DB) {
 	taskapi.NewHandler(w, db).InitRoutes(r)
 }
 
+// safeGo wraps a goroutine with panic recovery
+func safeGo(logger echo.Logger, fn func()) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Errorf("Goroutine panic recovered: %v", r)
+			}
+		}()
+		fn()
+	}()
+}
+
 func main() {
 	r := router.New()
 	r.Use(middleware.Recover())
@@ -49,19 +62,29 @@ func main() {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
+	// Get server port from env var or use default
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8070"
+	}
+
 	// Start server
 	go func() {
-		if err := r.Start(":8070"); err != nil && err != http.ErrServerClosed {
+		if err := r.Start(fmt.Sprintf(":%s", port)); err != nil && err != http.ErrServerClosed {
 			r.Logger.Fatal("shutting down the server")
 		}
 	}()
 
 	r.Logger.Info("Worker initialized and are Ready...")
-	go worker.RunTasks(w)
+	safeGo(r.Logger, func() {
+		worker.RunTasks(w)
+	})
 	r.Logger.Info("Workers are now listening to their worker queue.")
 
 	r.Logger.Info("Running background scheduler")
-	go scheduler.InitBackgroundScheduler()
+	safeGo(r.Logger, func() {
+		scheduler.InitBackgroundScheduler()
+	})
 	r.Logger.Info("Initiated background scheduler.")
 
 	sig := <-signalCh
